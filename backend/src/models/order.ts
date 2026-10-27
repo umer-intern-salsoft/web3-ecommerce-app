@@ -6,27 +6,29 @@ export interface IOrderItem {
 }
 
 export interface IOrder extends Document {
+  userId: Types.ObjectId; // Linked to User model
   customerWallet: string;
   items: IOrderItem[];
   totalUSD: number;
   tokenAmountRequired: number;
   referenceKey: string;
-  status: 'pending' | 'paid' | 'shipped';
+  status: 'pending' | 'paid';
   createdAt: Date;
 }
 
-const orderItemSchema = new Schema<IOrderItem>({
-  productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-  quantity: { type: Number, required: true, min: 1 }
-});
-
 const orderSchema = new Schema<IOrder>({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   customerWallet: { type: String, required: true },
-  items: [orderItemSchema],
-  totalUSD: { type: Number, required: true, min: 0 },
-  tokenAmountRequired: { type: Number, required: true, min: 0 },
-  referenceKey: { type: String, required: true, unique: true, index: true },
-  status: { type: String, enum: ['pending', 'paid', 'shipped'], default: 'pending' },
+  items: [
+    {
+      productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+      quantity: { type: Number, required: true, min: 1 }
+    }
+  ],
+  totalUSD: { type: Number, required: true },
+  tokenAmountRequired: { type: Number, required: true },
+  referenceKey: { type: String, required: true, unique: true },
+  status: { type: String, enum: ['pending', 'paid'], default: 'pending' },
   createdAt: { type: Date, default: Date.now }
 });
 

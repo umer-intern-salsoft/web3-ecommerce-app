@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { fetchProducts, initializeCheckout } from '../services/api';
-import type { Product, CartItem } from '../services/api';
+import type { Product, CartItem, User } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const TOKEN_EXCHANGE_RATE = 10; // $1 USD = 10 Custom Tokens
 
-export const StorefrontScreen: React.FC = () => {
+interface StorefrontScreenProps {
+  user: User;
+  onLogout: () => void;
+}
+
+export const StorefrontScreen: React.FC<StorefrontScreenProps> = ({ user, onLogout }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,8 +18,7 @@ export const StorefrontScreen: React.FC = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const navigate = useNavigate();
 
-  // Retrieve user's connected wallet address from localStorage session
-  const customerWallet = localStorage.getItem('wallet_pubkey');
+  const customerWallet = "11111111111111111111111111111111";
 
   useEffect(() => {
     fetchProducts()
@@ -53,28 +57,28 @@ export const StorefrontScreen: React.FC = () => {
   const totalTokens = totalUSD * TOKEN_EXCHANGE_RATE;
 
   const handleCheckout = async () => {
-    if (!customerWallet) {
-      alert('No active wallet session found. Please log into your vault first.');
-      navigate('/');
-      return;
-    }
-
     if (cart.length === 0) return;
 
     try {
       setIsCheckingOut(true);
-      const payloadItems = cart.map((item) => ({
+      const formattedItems = cart.map((item) => ({
         productId: item.product._id,
         quantity: item.quantity,
       }));
 
-      const response = await initializeCheckout(customerWallet, payloadItems);
+      const userId = user.userId;
+
+      const response = await initializeCheckout(
+        userId,
+        customerWallet,
+        formattedItems
+      );
       
-      // Store order details in session storage to use in the payment phase next
+      // Store order details in session storage
       sessionStorage.setItem('current_order', JSON.stringify(response));
       
-      alert(`Order initialized successfully!\nOrder ID: ${response.orderId}\nReference Key: ${response.referenceKey}`);
-      // Here you will navigate to your Solana Pay Payment Screen in the next phase
+      navigate('/payment');
+
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Checkout failed');
     } finally {
@@ -87,14 +91,34 @@ export const StorefrontScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+      {/* Top Header displaying Username and Admin options */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-gray-800 pb-4 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-purple-400">Decentralized Storefront</h1>
           <p className="text-sm text-gray-400">Pay securely with custom SPL tokens via Solana Pay</p>
         </div>
-        <div className="text-sm bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
-          <span className="text-gray-400">Connected Wallet: </span>
-          <span className="font-mono text-purple-300">{customerWallet ? `${customerWallet.slice(0, 4)}...${customerWallet.slice(-4)}` : 'Not Connected'}</span>
+        
+        <div className="flex items-center space-x-3">
+          {user.role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="bg-purple-600/30 text-purple-300 border border-purple-500/50 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-purple-600/50 transition"
+            >
+              🛡️ Admin Portal
+            </button>
+          )}
+          
+          <div className="text-sm bg-gray-800 px-4 py-2 rounded-lg border border-gray-700 flex items-center space-x-2">
+            <span className="text-gray-400 font-medium">👤 User:</span>
+            <span className="font-semibold text-purple-300">{user.username}</span>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg text-sm hover:bg-red-500/30 transition"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
