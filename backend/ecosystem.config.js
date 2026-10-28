@@ -1,8 +1,8 @@
-module.exports = {
+export default {
   apps: [
     {
       name: "web3-ecommerce-app",
-      script: "dist/index.js",
+      script: "dist/server.js",
       instances: 1,
       autorestart: true,
       watch: false,
