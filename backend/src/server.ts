@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import https from 'https';
+import http from 'http';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { connectDB } from './config/db.js';
@@ -7,6 +9,7 @@ import { Product } from './models/product.js';
 import { Order } from './models/order.js';
 import { User } from './models/user.js';
 import { Keypair, Connection, PublicKey } from '@solana/web3.js';
+import credentials from '../ssl.js';
 
 dotenv.config();
 
@@ -22,6 +25,7 @@ app.use(cors({
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 const SOLANA_RPC = process.env.SOLANA_RPC || 'https://api.devnet.solana.com';
 const connection = new Connection(SOLANA_RPC, 'confirmed');
 
@@ -341,10 +345,14 @@ app.delete('/api/admin/products/:id', async (req, res) => {
   }
 });
 
+let httpsServer: http.Server | https.Server;
+if (NODE_ENV === "customdev") httpsServer = https.createServer(credentials, app);
+else httpsServer = http.createServer(app);
+
 // --- START SERVER ---
 connectDB().then(() => {
   seedDatabase();
-  app.listen(PORT, () => {
+  httpsServer.listen(PORT, () => {
     console.log(`Backend server running on port ${PORT}`);
   });
 });
