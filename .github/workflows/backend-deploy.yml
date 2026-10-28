@@ -25,8 +25,8 @@ jobs:
                 password: ${{ secrets.FTP_PASSWORD }}
                 protocol: ftp
                 port: 21
-                local-dir: ./
-                server-dir: /${{ vars.SERVER_DIR }}/
+                local-dir: ./backend
+                server-dir: /${{ vars.SERVER_DIR }}/backend
                 exclude: |
                   **/.git*
                   **/.git*/**
@@ -44,7 +44,7 @@ jobs:
                   password: ${{ secrets.CPANEL_PASSWORD }}
                   port: 22
                   script: |
-                      cd ./public_html/${{ vars.SERVER_DIR }}/
+                      cd ./public_html/${{ vars.SERVER_DIR }}/backend
                       npm install --legacy-peer-deps
                       npm run build
                       pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js

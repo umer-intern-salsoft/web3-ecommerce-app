@@ -29,13 +29,16 @@ jobs:
       - name: 🔨 Install Dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: |
+          cd frontend
           npm install --legacy-peer-deps
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
           CI: false
 
       - name: 🏗 Build Project
-        run: npm run build
+        run: |
+          cd frontend
+          npm run build
 
       - name: 📂 Sync files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -44,7 +47,7 @@ jobs:
           username: ${{ vars.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
-          local-dir: ./dist/
+          local-dir: ./frontend/dist/
           server-dir: /${{ vars.SERVER_DIR }}/
 
   health-check:
