@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import https from 'https';
+import http from 'http';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { connectDB } from './config/db.js';
@@ -7,20 +9,28 @@ import { Product } from './models/product.js';
 import { Order } from './models/order.js';
 import { User } from './models/user.js';
 import { Keypair, Connection, PublicKey } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import credentials from '../ssl.js';
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Enable dynamic CORS for production deployment
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+app.use(cors({
+  origin: [FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
-const SOLANA_RPC = 'https://api.devnet.solana.com';
+const NODE_ENV = process.env.NODE_ENV || "development";
+const SOLANA_RPC = process.env.SOLANA_RPC || 'https://api.devnet.solana.com';
 const connection = new Connection(SOLANA_RPC, 'confirmed');
 
-const MERCHANT_WALLET = '8iwQM2hdFeDqdskgoE8CJGPdh4PK73AhGSuu6pKgte6c';
-const CUSTOM_TOKEN_MINT = '8wy77GbnLEnyHsyC33ukJVbTRuiXVxDSrwQbyrrnjLMk';
+const MERCHANT_WALLET = process.env.MERCHANT_WALLET || 'FKfgfE2rcYriDjsJShST5NqEBM8qBqviTFszQ1iqfQ6h';
+const CUSTOM_TOKEN_MINT = process.env.CUSTOM_TOKEN_MINT || '8wy77GbnLEnyHsyC33ukJVbTRuiXVxDSrwQbyrrnjLMk';
 
 // Mock Exchange Rate: $1 USD = 10 Custom Tokens
 const TOKEN_EXCHANGE_RATE = 10;
@@ -268,19 +278,23 @@ app.get('/api/admin/wallet-balance', async (req, res) => {
   try {
     const merchantPubkey = new PublicKey(MERCHANT_WALLET);
     
-    // Get SOL balance
+    // Get native SOL balance
     const lamports = await connection.getBalance(merchantPubkey);
     const solBalance = Number(lamports) / 1e9;
 
-    // Get Custom SPL Token balance
+    // Get Custom SPL Token balance using parsed accounts
     let tokenBalance = 0;
     try {
-      const mintPubkey = new PublicKey(CUSTOM_TOKEN_MINT);
-      const ata = await getAssociatedTokenAddress(mintPubkey, merchantPubkey);
-      const accountInfo = await getAccount(connection, ata);
-      tokenBalance = Number(accountInfo.amount);
-    } catch {
-      tokenBalance = 0; 
+      const parsedAccounts = await connection.getParsedTokenAccountsByOwner(
+        merchantPubkey,
+        { mint: new PublicKey(CUSTOM_TOKEN_MINT) }
+      );
+
+      if (parsedAccounts.value.length > 0) {
+        tokenBalance = parsedAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount || 0;
+      }
+    } catch (tokenErr) {
+      console.error('Error fetching SPL token balance:', tokenErr);
     }
 
     res.json({ solBalance, tokenBalance, merchantWallet: MERCHANT_WALLET });
@@ -331,10 +345,14 @@ app.delete('/api/admin/products/:id', async (req, res) => {
   }
 });
 
+let httpsServer: http.Server | https.Server;
+if (NODE_ENV === "customdev") httpsServer = https.createServer(credentials, app);
+else httpsServer = http.createServer(app);
+
 // --- START SERVER ---
 connectDB().then(() => {
   seedDatabase();
-  app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
+  httpsServer.listen(PORT, () => {
+    console.log(`Backend server running on port ${PORT}`);
   });
 });
