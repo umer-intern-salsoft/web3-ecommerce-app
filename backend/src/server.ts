@@ -29,6 +29,10 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 const SOLANA_RPC = process.env.SOLANA_RPC || 'https://api.devnet.solana.com';
 const connection = new Connection(SOLANA_RPC, 'confirmed');
 
+app.get('/', (_req, res) => {
+  res.send(`Backend is running on port ${PORT}`);
+});
+
 const MERCHANT_WALLET = process.env.MERCHANT_WALLET || 'FKfgfE2rcYriDjsJShST5NqEBM8qBqviTFszQ1iqfQ6h';
 const CUSTOM_TOKEN_MINT = process.env.CUSTOM_TOKEN_MINT || '8wy77GbnLEnyHsyC33ukJVbTRuiXVxDSrwQbyrrnjLMk';
 
