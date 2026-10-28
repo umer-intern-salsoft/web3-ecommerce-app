@@ -18,7 +18,7 @@ const app = express();
 // Enable dynamic CORS for production deployment
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(cors({
-  origin: [FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000'],
+  origin: [FRONTEND_URL, 'https://react.customdev.solutions', 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
 }));
 
