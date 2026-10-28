@@ -25,8 +25,8 @@ jobs:
                 password: ${{ secrets.FTP_PASSWORD }}
                 protocol: ftp
                 port: 21
-                local-dir: ./backend
-                server-dir: /${{ vars.SERVER_DIR }}/backend
+                local-dir: ./backend/
+                server-dir: /${{ vars.SERVER_DIR }}/backend/
                 exclude: |
                   **/.git*
                   **/.git*/**
