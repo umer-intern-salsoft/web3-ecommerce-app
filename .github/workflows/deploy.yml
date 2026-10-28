@@ -3,7 +3,7 @@ on:
     branches:
       - customdev
 
-name: 🚀 Deploy website on push
+name: 🚀 Deploy Frontend
 
 jobs:
   web-deploy:

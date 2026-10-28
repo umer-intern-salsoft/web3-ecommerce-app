@@ -1,4 +1,4 @@
-name: Deploy on customdev
+name: Deploy Backend
 
 on:
     push:
